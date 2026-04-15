@@ -4,7 +4,7 @@ A lightweight, local Monte Carlo simulation tool for agile teams using Jira. Pro
 
 **No cloud. No accounts. No data leaves your machine.**
 
-![Monte Carlo Projection Tool Screenshot](screenshot.png)
+![Monte Carlo Projection Tool Screenshot](simulation with dates.png)
 
 ---
 
