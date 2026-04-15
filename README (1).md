@@ -12,30 +12,38 @@ A lightweight, local Monte Carlo simulation tool for agile teams using Jira. Pro
 
 Most agile forecasting tools either require cloud access, send your data to a third-party service, or are buried inside expensive portfolio management platforms. This tool runs entirely on your local machine using CSV exports from Jira — making it safe to use with sensitive or proprietary project data on corporate networks.
 
-It supports both **Scrum** (velocity-based) and **Kanban** (throughput-based) teams.
-
 ---
 
 ## What It Does
 
 - Runs 10,000 Monte Carlo simulations (configurable) against your historical Jira data
-- Forecasts how many sprints or weeks are needed to clear a backlog
-- Shows results at 50%, 70%, 85%, and 95% confidence levels
+- Forecasts how many weeks are needed to clear a backlog at multiple confidence levels
+- Applies a **capacity adjustment** to account for meetings, holidays, and overhead
 - Calculates forecast finish **dates** from a given start date
-- Displays a weekly throughput breakdown for Kanban teams
-- Saves charts as PNG for use in presentations or reports
+- Displays a weekly throughput breakdown
+- Exports results as a **PNG chart**, **HTML report**, or **PDF report**
 
 ---
 
-## Requirements
+## Platform Support
 
-### Python
-Python 3.7 or higher is required. Download from [python.org](https://python.org/downloads).
+| Platform | Supported |
+|----------|-----------|
+| Windows  | ✅ |
+| macOS    | ✅ |
+| Linux    | ✅ |
 
-> **Windows users**: During installation, tick **"Add Python to PATH"** before clicking Install.
+---
 
-### Python packages
-Three packages are required. Install them with:
+## Running the Tool
+
+### Windows — Run from Source
+
+1. Install Python 3.7 or higher from [python.org](https://python.org/downloads)
+
+> During installation, tick **"Add Python to PATH"** before clicking Install.
+
+2. Install the required packages:
 
 ```
 pip install pandas numpy matplotlib
@@ -47,43 +55,49 @@ If you are on a corporate network with SSL inspection, use:
 pip install pandas numpy matplotlib --trusted-host pypi.org --trusted-host files.pythonhosted.org --user
 ```
 
-`tkinter` (the GUI framework) is **built into Python** — no installation needed.
-
-### Platform support
-| Platform | Supported |
-|----------|-----------|
-| Windows  | ✅ |
-| macOS    | ✅ |
-| Linux    | ✅ |
-
----
-
-## Installation
-
-1. Download or clone this repository
-2. Install the required packages (see above)
 3. Run the tool:
 
 ```
 python monte_carlo_jira.py
 ```
 
-No configuration files, no setup scripts, no environment variables.
+### macOS — Launcher Script
+
+1. Download `monte_carlo_jira.py` and `launch_monte_carlo.command` into the same folder
+2. Install dependencies (one-time setup):
+
+```
+brew install python@3.12 python-tk@3.12
+/opt/homebrew/bin/python3.12 -m venv ~/monte_carlo_env
+source ~/monte_carlo_env/bin/activate
+pip install pandas numpy matplotlib
+```
+
+3. Make the launcher executable (one-time setup):
+
+```
+chmod +x /path/to/launch_monte_carlo.command
+```
+
+4. Double-click `launch_monte_carlo.command` in Finder to launch the app
+
+> If Homebrew is not installed, run this first:
+> ```
+> /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+> ```
+
+### Linux — Run from Source
+
+```
+pip3 install pandas numpy matplotlib
+python3 monte_carlo_jira.py
+```
 
 ---
 
 ## Exporting Data from Jira
 
-### Scrum teams — Velocity CSV
-
-1. Go to your Jira board
-2. Click **Reports** → **Velocity Chart**
-3. Click **Export** (top right of the chart)
-4. Save the CSV file
-
-The tool will automatically detect the completed points column.
-
-### Kanban teams — Issue Export CSV
+### Issue Export CSV
 
 1. Go to **Issues** → **Search for Issues** (or use an existing filter)
 2. Filter for your team's completed issues over the last 12–16 weeks, for example:
@@ -95,7 +109,7 @@ The tool will automatically detect the completed points column.
 
 The tool reads the **Resolved** date column and calculates weekly throughput automatically.
 
-### Control Chart CSV (optional — both modes)
+### Control Chart CSV (optional)
 
 1. Go to your Jira board
 2. Click **Reports** → **Control Chart**
@@ -108,28 +122,46 @@ If provided, the tool will add cycle time percentile statistics to the summary.
 
 ## Usage
 
-1. Run `python monte_carlo_jira.py`
-2. Select your **Team Type** — Scrum or Kanban
-3. Browse to your **CSV file**
-4. Set your **backlog size** (story points for Scrum, number of items for Kanban)
-5. Set your **start date** (defaults to today)
-6. Click **Run Simulation**
+1. Launch the tool using the appropriate method for your platform
+2. Browse to your **Issue Export CSV**
+3. Set your **backlog size** (number of items)
+4. Set your **weeks of history** to use (default 16)
+5. Set your **start date** for the forecast (defaults to today)
+6. Set your **team availability %** (default 80% — see below)
+7. Click **Run Simulation**
 
 Results appear across three tabs:
 
 - **Chart** — distribution histograms with confidence band overlays
 - **Summary** — full numeric breakdown including forecast finish dates
-- **Weekly Throughput** — week-by-week item count with visual bar (Kanban mode)
+- **Weekly Throughput** — week-by-week item count with visual bar
 
-Use **Save Chart as PNG** to export the chart for reports or stakeholder presentations.
+After running, three export options appear at the bottom of the left panel:
+
+- **Save Chart as PNG** — exports the chart image
+- **Export Report as HTML** — single self-contained file with chart, summary, and throughput breakdown; opens in any browser and is easily emailed
+- **Export Report as PDF** — three-page PDF with chart, summary, and throughput breakdown; no additional dependencies required
+
+---
+
+## Capacity Adjustment
+
+The **Team availability %** field scales the historical throughput before simulation to reflect realistic team capacity. The default is **80%**, which is the standard agile recommendation accounting for meetings, ceremonies, holidays, and general overhead.
+
+| Setting | Use case |
+|---------|----------|
+| 100% | No adjustment — raw historical throughput only |
+| 80% | Standard recommendation for most teams |
+| 70% | High-overhead periods (e.g. PI planning, major releases) |
+| 60% | Significant planned absence or reduced team size |
+
+This is intentionally kept simple — a single percentage applied across the forecast horizon. A consistent availability assumption is more useful and more honest than attempting to model individual holidays or sick days, which cannot be predicted.
 
 ---
 
 ## Understanding the Results
 
 ### Confidence levels
-
-The tool reports results at four confidence levels:
 
 | Level | Meaning |
 |-------|---------|
@@ -138,26 +170,42 @@ The tool reports results at four confidence levels:
 | 85% | A safe commitment for most stakeholder conversations. |
 | 95% | Near-certain. Use for hard deadlines or release planning. |
 
-### Weeks/sprints chart (left)
+### Weeks chart (left)
 
-Shows how many weeks or sprints were needed across all simulations. The dashed lines show where each confidence level falls. A wider distribution means more variability in your historical throughput.
+Shows how many weeks were needed across all simulations. A wider distribution means more variability in your historical throughput.
 
 ### Throughput chart (right)
 
-Shows how many items or points were completed in the median number of periods across all simulations. The `>=` figures are **lower bounds** — in X% of simulations, the team completed *at least* that many items.
+Shows how many items were completed in the median number of weeks. The `>=` figures are **lower bounds** — in X% of simulations, the team completed *at least* that many items.
 
 ### Why the 95% throughput figure is higher than the 50%
 
-The throughput chart asks *"how much will we complete?"* — so higher is better. 95% confidence means the team exceeded that figure in nearly every simulation. This is the opposite direction to the weeks chart, which asks *"how long will it take?"* where lower is better.
+The throughput chart asks *"how much will we complete?"* — so higher is better. This is the opposite direction to the weeks chart, which asks *"how long will it take?"* where lower is better.
+
+### A note on accuracy
+
+Monte Carlo simulation produces a probability distribution, not a precise prediction. The results reflect the range of outcomes that history suggests are plausible. The 85% confidence level is generally appropriate for stakeholder conversations; the 95% level for hard external deadlines.
+
+---
+
+## Changelog
+
+| Version | Changes |
+|---------|---------|
+| v2.4 | Capacity adjustment (%), HTML report export, PDF report export |
+| v2.3 | Cross-platform button fix for macOS compatibility |
+| v2.2 | Forecast finish dates, scrollable left panel |
+| v2.1 | Kanban throughput mode, weekly throughput tab |
+| v2.0 | GUI with tkinter |
 
 ---
 
 ## Tips
 
-- **Minimum history**: At least 5–6 sprints or weeks of data for meaningful results. 10–16 is better.
-- **Zero weeks**: Weeks with zero completions (holidays, blockers) are included in the simulation. If they are genuinely non-working periods you may want to reduce the weeks of history to exclude them, or note their effect on the confidence spread.
-- **Mean vs median gap**: A large gap between mean and median throughput indicates spike-and-drought flow patterns — items being held and resolved in batches. This is worth addressing as a flow improvement.
-- **Story points vs items**: For Kanban forecasting, item count is generally more reliable than story points because it does not depend on consistent estimation.
+- **Minimum history**: At least 5–6 weeks of data for meaningful results. 10–16 is better.
+- **Zero weeks**: Weeks with zero completions are included in the simulation — they widen the upper confidence bands, which is appropriate.
+- **Mean vs median gap**: A large gap indicates spike-and-drought flow patterns — worth addressing as a flow improvement.
+- **Capacity default**: The 80% default is a planning assumption. Adjust it to reflect your team's actual situation.
 
 ---
 
