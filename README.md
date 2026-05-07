@@ -4,7 +4,7 @@ A lightweight, local Monte Carlo simulation tool for agile teams using Jira. Pro
 
 **No cloud. No accounts. No data leaves your machine.**
 
-![Monte Carlo Projection Tool Screenshot](simulation%20with%20dates.png)
+![Monte Carlo Projection Tool Screenshot](simulation with dates.png)
 
 ---
 
@@ -12,16 +12,21 @@ A lightweight, local Monte Carlo simulation tool for agile teams using Jira. Pro
 
 Most agile forecasting tools either require cloud access, send your data to a third-party service, or are buried inside expensive portfolio management platforms. This tool runs entirely on your local machine using CSV exports from Jira — making it safe to use with sensitive or proprietary project data on corporate networks.
 
+It supports both **Scrum** (velocity-based) and **Kanban** (throughput-based) teams.
+
 ---
 
 ## What It Does
 
 - Runs 10,000 Monte Carlo simulations (configurable) against your historical Jira data
-- Forecasts how many weeks are needed to clear a backlog at multiple confidence levels
+- Supports **Scrum** (velocity/story points) and **Kanban** (throughput/items) modes
+- Forecasts how many sprints or weeks are needed to clear a backlog at multiple confidence levels
 - Applies a **capacity adjustment** to account for meetings, holidays, and overhead
 - Calculates forecast finish **dates** from a given start date
-- Displays a weekly throughput breakdown
+- Automatically calculates **cycle time** from Created and Resolved dates
+- Displays a weekly throughput or sprint velocity breakdown
 - Exports results as a **PNG chart**, **HTML report**, or **PDF report**
+- Includes **info tooltips** on every field explaining what to enter and why
 
 ---
 
@@ -97,7 +102,7 @@ python3 monte_carlo_jira.py
 
 ## Exporting Data from Jira
 
-### Issue Export CSV
+### Kanban mode — Issue Export CSV
 
 1. Go to **Issues** → **Search for Issues** (or use an existing filter)
 2. Filter for your team's completed issues over the last 12–16 weeks, for example:
@@ -107,40 +112,50 @@ python3 monte_carlo_jira.py
 3. Click **Export** → **Export Excel CSV (all fields)**
 4. Save the CSV file
 
-The tool reads the **Resolved** date column and calculates weekly throughput automatically.
+The tool reads the **Resolved** date column and calculates weekly throughput automatically. Cycle time is calculated automatically from the **Created** and **Resolved** columns if both are present.
 
-### Control Chart CSV (optional)
+### Scrum mode — Velocity CSV
 
-1. Go to your Jira board
-2. Click **Reports** → **Control Chart**
-3. Click **Export**
-4. Save the CSV file
+Jira's velocity chart cannot be exported directly. Create a simple CSV manually by reading the completed points off the Jira velocity chart screen:
 
-If provided, the tool will add cycle time percentile statistics to the summary.
+```
+Sprint,Completed
+Sprint 1,42
+Sprint 2,38
+Sprint 3,51
+```
+
+- **Sprint** — sprint name or number (label only, not used in calculations)
+- **Completed** — story points completed in that sprint
+
+Save as a `.csv` file and load it in Scrum mode. Aim for at least 6–10 sprints of history.
 
 ---
 
 ## Usage
 
 1. Launch the tool using the appropriate method for your platform
-2. Browse to your **Issue Export CSV**
-3. Set your **backlog size** (number of items)
-4. Set your **weeks of history** to use (default 16)
-5. Set your **start date** for the forecast (defaults to today)
-6. Set your **team availability %** (default 80% — see below)
-7. Click **Run Simulation**
+2. Select your **Team Type** — Kanban or Scrum
+3. Browse to your **CSV file**
+4. Set your **backlog size** (items for Kanban, story points for Scrum)
+5. Set your **weeks or sprints of history** to use
+6. Set your **start date** for the forecast (defaults to today)
+7. Set your **team availability %** (default 80%)
+8. Click **Run Simulation**
 
 Results appear across three tabs:
 
 - **Chart** — distribution histograms with confidence band overlays
-- **Summary** — full numeric breakdown including forecast finish dates
-- **Weekly Throughput** — week-by-week item count with visual bar
+- **Summary** — full numeric breakdown including forecast finish dates and cycle time
+- **Weekly Throughput** — week-by-week or sprint-by-sprint breakdown
 
 After running, three export options appear at the bottom of the left panel:
 
 - **Save Chart as PNG** — exports the chart image
-- **Export Report as HTML** — single self-contained file with chart, summary, and throughput breakdown; opens in any browser and is easily emailed
-- **Export Report as PDF** — three-page PDF with chart, summary, and throughput breakdown; no additional dependencies required
+- **Export Report as HTML** — single self-contained file; opens in any browser, easily emailed
+- **Export Report as PDF** — three-page PDF; no additional dependencies required
+
+Hover over the **ⓘ** icons next to each field for guidance on what to enter.
 
 ---
 
@@ -155,8 +170,6 @@ The **Team availability %** field scales the historical throughput before simula
 | 70% | High-overhead periods (e.g. PI planning, major releases) |
 | 60% | Significant planned absence or reduced team size |
 
-This is intentionally kept simple — a single percentage applied across the forecast horizon. A consistent availability assumption is more useful and more honest than attempting to model individual holidays or sick days, which cannot be predicted.
-
 ---
 
 ## Understanding the Results
@@ -170,13 +183,13 @@ This is intentionally kept simple — a single percentage applied across the for
 | 85% | A safe commitment for most stakeholder conversations. |
 | 95% | Near-certain. Use for hard deadlines or release planning. |
 
-### Weeks chart (left)
+### Weeks/sprints chart (left)
 
-Shows how many weeks were needed across all simulations. A wider distribution means more variability in your historical throughput.
+Shows how many weeks or sprints were needed across all simulations. A wider distribution means more variability in your historical data.
 
 ### Throughput chart (right)
 
-Shows how many items were completed in the median number of weeks. The `>=` figures are **lower bounds** — in X% of simulations, the team completed *at least* that many items.
+Shows how many items or points were completed in the median number of periods. The `>=` figures are **lower bounds** — in X% of simulations, the team completed *at least* that many items.
 
 ### Why the 95% throughput figure is higher than the 50%
 
@@ -192,6 +205,8 @@ Monte Carlo simulation produces a probability distribution, not a precise predic
 
 | Version | Changes |
 |---------|---------|
+| v2.6 | Scrum mode re-added with velocity CSV support, sprint length field |
+| v2.5 | Splash screen, info tooltips, auto cycle time from issue export |
 | v2.4 | Capacity adjustment (%), HTML report export, PDF report export |
 | v2.3 | Cross-platform button fix for macOS compatibility |
 | v2.2 | Forecast finish dates, scrollable left panel |
@@ -202,9 +217,10 @@ Monte Carlo simulation produces a probability distribution, not a precise predic
 
 ## Tips
 
-- **Minimum history**: At least 5–6 weeks of data for meaningful results. 10–16 is better.
+- **Minimum history**: At least 5–6 weeks or sprints of data for meaningful results. 10–16 is better.
+- **Kanban vs Scrum**: For teams with inconsistent sprint data in Jira, Kanban mode using the Resolved date is more reliable than Scrum velocity — even for teams running Scrum.
+- **Fewer weeks = faster forecast**: If the team has improved recently, reducing weeks of history weights the simulation towards recent performance. Use judgement about whether the older data still represents the team.
 - **Zero weeks**: Weeks with zero completions are included in the simulation — they widen the upper confidence bands, which is appropriate.
-- **Mean vs median gap**: A large gap indicates spike-and-drought flow patterns — worth addressing as a flow improvement.
 - **Capacity default**: The 80% default is a planning assumption. Adjust it to reflect your team's actual situation.
 
 ---
